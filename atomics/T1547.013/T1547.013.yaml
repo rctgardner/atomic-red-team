@@ -1,0 +1,106 @@
+---
+attack_technique: T1547.013
+display_name: 'Boot or Logon Autostart Execution: XDG Autostart Entries'
+
+atomic_tests:
+- name: Create per-user XDG autostart entry
+  description: |
+    Generate a per-user XDG autostart entry for a script
+
+  supported_platforms:
+    - linux
+
+  input_arguments:
+    output_file:
+      description: Basename of autostart file. The `.desktop` extension will be appended to this to generate the full filename
+      type: String
+      default: atomic.red.team.T1547_013
+    entry_name:
+      description: Name of autostart entry
+      type: String
+      default: DBus
+    exec_file:
+      description: Script to execute. Will be created if it does not exist
+      type: Path
+      default: $HOME/.config/atomic_redteam/xdg
+
+  dependencies:
+    - description: |
+        The relevant autostart directory must exist
+      prereq_command: |
+        test -d $(xdg-user-dir)/.config/autostart
+      get_prereq_command: |
+        mkdir -p $(xdg-user-dir)/.config/autostart
+    - description: |
+        The shell script being executed must exist and be executable
+      prereq_command: |
+        test -f #{exec_file} && test -x #{exec_file}
+      get_prereq_command: |
+        mkdir -p $(dirname #{exec_file})
+        cp PathToAtomicsFolder/T1547.013/src/echo-art-fish.sh #{exec_file}
+        chmod +x #{exec_file}
+    - description: |
+        XDG utilities are installed
+      prereq_command: |
+        which xdg-user-dir
+      get_prereq_command: |
+        echo "Please manually install the xdg-utils package"
+
+  executor:
+    name: sh
+    elevation_required: false
+    command: |
+      DESKTOP_FILE=$(xdg-user-dir)/.config/autostart/#{output_file}.desktop
+      cp PathToAtomicsFolder/T1547.013/src/template.desktop $DESKTOP_FILE
+      echo "Name=#{entry_name}" >> $DESKTOP_FILE
+      echo "Exec=sh -c \"#{exec_file}\" 1>/dev/null 2>/dev/null" >> $DESKTOP_FILE
+    cleanup_command: |
+      rm -f $(xdg-user-dir)/.config/autostart/#{output_file}.desktop
+
+- name: Create a system-wide XDG autostart entry
+  description: |
+    Generate a system-wide XDG autostart entry for a script
+
+  supported_platforms:
+    - linux
+
+  input_arguments:
+    output_file:
+      description: Basename of autostart file. The `.desktop` extension will be appended to this to generate the full filename
+      type: String
+      default: T1547_013
+    entry_name:
+      description: Name of autostart entry
+      type: String
+      default: DBus
+    exec_file:
+      description: Script to execute. Will be created if it does not exist
+      type: Path
+      default: /tmp/.atomic_redteam/xdg
+
+  dependencies:
+    - description: |
+        The relevant autostart directory must exist
+      prereq_command: |
+        test -d /etc/xdg/autostart
+      get_prereq_command: |
+        mkdir -p /etc/xdg/autostart
+    - description: |
+        The shell script being executed must exist and be executable
+      prereq_command: |
+        test -f #{exec_file} && test -x #{exec_file}
+      get_prereq_command: |
+        mkdir -p $(dirname #{exec_file})
+        cp PathToAtomicsFolder/T1547.013/src/echo-art-fish.sh #{exec_file}
+        chmod +x #{exec_file}
+
+  executor:
+    name: sh
+    elevation_required: true
+    command: |
+      DESKTOP_FILE=/etc/xdg/autostart/#{output_file}.desktop
+      cp PathToAtomicsFolder/T1547.013/src/template.desktop $DESKTOP_FILE
+      echo "Name=#{entry_name}" >> $DESKTOP_FILE
+      echo "Exec=sh -c \"#{exec_file}\" 1>/dev/null 2>/dev/null" >> $DESKTOP_FILE
+    cleanup_command: |
+      rm -f /etc/xdg/autostart/#{output_file}.desktop
