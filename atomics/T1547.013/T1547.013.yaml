@@ -68,7 +68,7 @@ atomic_tests:
     output_file:
       description: Basename of autostart file. The `.desktop` extension will be appended to this to generate the full filename
       type: String
-      default: T1547_013
+      default: atomic.red.team.T1547_013
     entry_name:
       description: Name of autostart entry
       type: String
